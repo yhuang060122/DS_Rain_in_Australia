@@ -16,7 +16,8 @@ st.set_page_config(page_title="Rain Prediction App", layout="wide")
 # ------------------------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("weatherAUS.csv")
+    url = "https://github.com/yhuang060122/DS_Rain_in_Australia/blob/main/streamlit/weatherAUS.csv"
+    df = pd.read_csv(url)
     df['Date'] = pd.to_datetime(df['Date'])
     df['Month'] = df['Date'].dt.month
     return df
