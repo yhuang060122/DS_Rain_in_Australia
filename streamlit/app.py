@@ -13,11 +13,13 @@ st.set_page_config(page_title="Rain Prediction App", layout="wide")
 
 # ------------------------------------------
 # LOAD DATA
-# ------------------------------------------
+# ------------------------------------------  
 @st.cache_data
 def load_data():
-    url = "https://github.com/yhuang060122/DS_Rain_in_Australia/blob/main/streamlit/weatherAUS.csv"
-    df = pd.read_csv(url)
+    if not os.path.exists("weatherAUS.csv"):
+        st.error("Dataset not found. Please check file path.")
+        return None
+    df = pd.read_csv("weatherAUS.csv")
     df['Date'] = pd.to_datetime(df['Date'])
     df['Month'] = df['Date'].dt.month
     return df
