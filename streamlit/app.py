@@ -1,94 +1,107 @@
+# ==========================================
+# STREAMLIT APP - Rain Prediction Australia
+# ==========================================
+
 import streamlit as st
 import pandas as pd
 import numpy as np
+import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-st.set_page_config(page_title="Airbnb Pricing Dashboard", layout="wide")
+st.set_page_config(page_title="Rain Prediction App", layout="wide")
 
-# Title
-st.title("🏠 Airbnb Pricing Analysis Dashboard")
-st.markdown("Analyse exploratoire et prédiction des prix Airbnb à Bordeaux")
-
-# Load data
+# ------------------------------------------
+# LOAD DATA
+# ------------------------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("airbnb_bordeaux.csv")
-    df["price"] = df["price"].replace('[\$,]', '', regex=True).astype(float)
+    df = pd.read_csv("weatherAUS.csv")
+    df['Date'] = pd.to_datetime(df['Date'])
+    df['Month'] = df['Date'].dt.month
     return df
 
 df = load_data()
 
-# Sidebar filters
-st.sidebar.header("🔎 Filtres")
+# ------------------------------------------
+# SIDEBAR
+# ------------------------------------------
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("Go to", [
+    "Project Overview",
+    "Data Exploration",
+    "Prediction"
+])
 
-room_type = st.sidebar.multiselect(
-    "Type de logement",
-    options=df["room_type"].dropna().unique(),
-    default=df["room_type"].dropna().unique()
-)
+# ------------------------------------------
+# PAGE 1 - OVERVIEW
+# ------------------------------------------
+if page == "Project Overview":
+    st.title("🌧 Rain Prediction in Australia")
+    
+    st.markdown("""
+    ### 🎯 Objective
+    Predict whether it will rain tomorrow based on weather data.
+    
+    ### 📊 Dataset
+    - 10 years of daily weather observations
+    - Multiple Australian locations
+    - Target: RainTomorrow (Yes/No)
+    
+    ### 💡 Business Value
+    - Agriculture planning
+    - Transport optimization
+    - Weather risk management
+    """)
 
-max_price = st.sidebar.slider(
-    "Prix maximum",
-    int(df["price"].min()),
-    int(df["price"].max()),
-    int(df["price"].quantile(0.95))
-)
+# ------------------------------------------
+# PAGE 2 - EDA
+# ------------------------------------------
+if page == "Data Exploration":
+    st.title("📊 Data Exploration")
 
-# Apply filters
-filtered_df = df[
-    (df["room_type"].isin(room_type)) &
-    (df["price"] <= max_price)
-]
+    st.subheader("Dataset Preview")
+    st.dataframe(df.head())
 
-# KPI Section
-st.subheader("📊 KPI clés")
-col1, col2, col3 = st.columns(3)
+    st.subheader("Target Distribution")
+    fig, ax = plt.subplots()
+    sns.countplot(x='RainTomorrow', data=df, ax=ax)
+    st.pyplot(fig)
 
-col1.metric("Prix moyen", f"{filtered_df['price'].mean():.0f} €")
-col2.metric("Prix médian", f"{filtered_df['price'].median():.0f} €")
-col3.metric("Nb logements", filtered_df.shape[0])
+    st.subheader("Numerical Distribution")
+    num_col = st.selectbox("Select a numerical feature", df.select_dtypes(include=np.number).columns)
+    fig, ax = plt.subplots()
+    sns.histplot(df[num_col], kde=True, ax=ax)
+    st.pyplot(fig)
 
-# Distribution
-st.subheader("💰 Distribution des prix")
-fig, ax = plt.subplots()
-sns.histplot(filtered_df["price"], bins=50, kde=True, ax=ax)
-st.pyplot(fig)
+    st.subheader("Correlation Heatmap")
+    fig, ax = plt.subplots(figsize=(8,6))
+    sns.heatmap(df.select_dtypes(include=np.number).corr(), ax=ax)
+    st.pyplot(fig)
 
-# Price by room type
-st.subheader("🛏️ Prix par type de logement")
-fig, ax = plt.subplots()
-sns.boxplot(x="room_type", y="price", data=filtered_df, ax=ax)
-plt.xticks(rotation=30)
-st.pyplot(fig)
+# ------------------------------------------
+# PAGE 3 - PREDICTION
+# ------------------------------------------
+if page == "Prediction":
+    st.title("🤖 Rain Prediction")
 
-# Scatter
-st.subheader("👥 Capacité vs Prix")
-fig, ax = plt.subplots()
-sns.scatterplot(x="accommodates", y="price", data=filtered_df, ax=ax)
-st.pyplot(fig)
+    st.markdown("Enter weather conditions:")
 
-# Correlation
-st.subheader("🔗 Corrélations")
-fig, ax = plt.subplots(figsize=(8,6))
-sns.heatmap(filtered_df.corr(numeric_only=True), annot=True, cmap="coolwarm", ax=ax)
-st.pyplot(fig)
+    humidity = st.slider("Humidity (3pm)", 0, 100, 50)
+    pressure = st.slider("Pressure (3pm)", 980, 1050, 1010)
+    temp = st.slider("Temperature (3pm)", -5, 50, 25)
+    wind = st.slider("Wind Speed", 0, 100, 20)
 
-# Simple prediction
-st.subheader("🤖 Simulation de prix")
+    # Dummy prediction (replace with real model)
+    if st.button("Predict"):
+        score = humidity * 0.4 - pressure * 0.01 + wind * 0.2
+        if score > 20:
+            st.error("🌧 It will likely rain tomorrow")
+        else:
+            st.success("☀️ No rain expected")
 
-accommodates = st.slider("Capacité", 1, 10, 2)
-bedrooms = st.slider("Chambres", 0, 5, 1)
-bathrooms = st.slider("Salles de bain", 0, 3, 1)
+    st.warning("⚠️ Demo prediction (replace with trained model)")
 
-# simple heuristic model
-pred_price = 30 + accommodates * 20 + bedrooms * 15 + bathrooms * 10
-
-st.success(f"💡 Prix estimé : {pred_price} €")
-
-# Raw data
-st.subheader("📄 Données brutes")
-st.dataframe(filtered_df.head(100))
-
-st.markdown("---")
-st.markdown("✅ Dashboard prêt pour démonstration en soutenance")
+# ==========================================
+# END APP
+# ==========================================
