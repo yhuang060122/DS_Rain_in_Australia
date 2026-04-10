@@ -8,6 +8,7 @@ import numpy as np
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 st.set_page_config(page_title="Rain Prediction App", layout="wide")
 
