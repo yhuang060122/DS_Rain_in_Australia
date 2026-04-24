@@ -22,8 +22,9 @@ def show(df):
 
     df.head()
 
-    X = df.select_dtypes(include=['float64', 'int64']).drop(
-        columns=['RainTomorrow'])
+    num_df = df.select_dtypes(include=np.number)
+
+    X = num_df.drop(columns=['RainTomorrow'], errors='ignore')
     y = df['RainTomorrow'].map({'Yes': 1, 'No': 0})
 
     model = RandomForestClassifier()
