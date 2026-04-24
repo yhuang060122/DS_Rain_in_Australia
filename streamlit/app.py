@@ -18,7 +18,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier
 
 from model import build_model
-from preprocessing import feature_engineering 
+from preprocessing import feature_engineering
 
 # ------------------------------------------
 # CONFIG
@@ -27,7 +27,9 @@ st.set_page_config(page_title="Rain Prediction App", layout="wide")
 
 # ------------------------------------------
 # LOAD DATA
-# ------------------------------------------  
+# ------------------------------------------
+
+
 @st.cache_data
 def load_data():
     if not os.path.exists("streamlit/weatherAUS.csv"):
@@ -38,11 +40,14 @@ def load_data():
     df['Month'] = df['Date'].dt.month
     return df
 
+
 df = load_data()
+
 
 @st.cache_resource
 def load_model(df):
     return build_model(df)
+
 
 model, feature_names = load_model(df)
 
@@ -54,6 +59,7 @@ st.sidebar.title("📌 Navigation")
 page = st.sidebar.radio("Go to", [
     "🏠 Overview",
     "📊 Data Exploration",
+    "🧹 Preprocessing",
     "⚙️ Feature Engineering",
     "🎯 Feature Selection",
     "🤖 Model",
@@ -63,9 +69,9 @@ page = st.sidebar.radio("Go to", [
 # ------------------------------------------
 # PAGE 1 - OVERVIEW
 # ------------------------------------------
-if page == "Project Overview":
+if page == "🏠 Overview":
     st.title("🌧 Rain Prediction in Australia")
-    
+
     st.markdown("""
     ### 🎯 Objective
     Predict whether it will rain tomorrow based on weather data.
@@ -86,7 +92,7 @@ if page == "Project Overview":
 # ------------------------------------------
 # PAGE 2 - EDA
 # ------------------------------------------
-if page == "Data Exploration":
+if page == "📊 Data Exploration":
     st.title("📊 Data Exploration")
 
     st.subheader("Dataset Preview")
@@ -98,13 +104,14 @@ if page == "Data Exploration":
     st.pyplot(fig)
 
     st.subheader("Numerical Distribution")
-    num_col = st.selectbox("Select a numerical feature", df.select_dtypes(include=np.number).columns)
+    num_col = st.selectbox("Select a numerical feature",
+                           df.select_dtypes(include=np.number).columns)
     fig, ax = plt.subplots()
     sns.histplot(df[num_col], kde=True, ax=ax)
     st.pyplot(fig)
 
     st.subheader("Correlation Heatmap")
-    fig, ax = plt.subplots(figsize=(8,6))
+    fig, ax = plt.subplots(figsize=(8, 6))
     sns.heatmap(df.select_dtypes(include=np.number).corr(), ax=ax)
     st.pyplot(fig)
 
@@ -200,13 +207,13 @@ elif page == "🌧️ Prediction":
         RainToday = st.selectbox("Rain Today", ["No", "Yes"])
 
     input_df = pd.DataFrame({
-        'MinTemp':[MinTemp],
-        'MaxTemp':[MaxTemp],
-        'Humidity9am':[Humidity9am],
-        'Humidity3pm':[Humidity3pm],
-        'Pressure9am':[Pressure9am],
-        'Pressure3pm':[Pressure3pm],
-        'RainToday':[1 if RainToday=="Yes" else 0]
+        'MinTemp': [MinTemp],
+        'MaxTemp': [MaxTemp],
+        'Humidity9am': [Humidity9am],
+        'Humidity3pm': [Humidity3pm],
+        'Pressure9am': [Pressure9am],
+        'Pressure3pm': [Pressure3pm],
+        'RainToday': [1 if RainToday == "Yes" else 0]
     })
 
     if st.button("Predict"):
@@ -221,8 +228,6 @@ elif page == "🌧️ Prediction":
 
         except Exception as e:
             st.warning("⚠️ Please fill all inputs correctly")
-
-
 
 
 # ==========================================
