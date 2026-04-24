@@ -11,14 +11,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.impute import SimpleImputer
-from sklearn.ensemble import RandomForestClassifier
+from utils.model import build_model
+from utils.preprocessing import feature_engineering
 
-from model import build_model
-from preprocessing import feature_engineering
+from pages import preprocessing, feature_engineering, feature_selection
 
 # ------------------------------------------
 # CONFIG
@@ -120,52 +116,19 @@ if page == "📊 Data Exploration":
 # PAGE 2 - PREPROCESSING
 # ==========================================
 elif page == "🧹 Preprocessing":
-    st.title("🧹 Data Preprocessing")
-
-    st.subheader("Missing Values")
-    st.bar_chart(df.isnull().sum())
-
-    st.markdown("""
-    ✔ Numerical → Median  
-    ✔ Categorical → Mode  
-    ✔ Encoding → OneHot  
-    ✔ Scaling → StandardScaler  
-    """)
+    preprocessing.show(df)
 
 # ==========================================
 # PAGE 3 - FEATURE ENGINEERING
 # ==========================================
 elif page == "⚙️ Feature Engineering":
-    st.title("⚙️ Feature Engineering")
-
-    st.code("""
-TempRange = MaxTemp - MinTemp
-HumidityDiff = Humidity3pm - Humidity9am
-""")
-
-    df_fe = feature_engineering(df)
-    st.dataframe(df_fe.head())
+    feature_engineering.show(df)
 
 # ==========================================
 # PAGE 4 - FEATURE SELECTION
 # ==========================================
 elif page == "🎯 Feature Selection":
-    st.title("🎯 Feature Importance")
-
-    df_fe = feature_engineering(df).dropna()
-
-    X = df_fe.drop(columns=['RainTomorrow'])
-    y = df_fe['RainTomorrow']
-
-    rf = RandomForestClassifier()
-    rf.fit(X.select_dtypes(include=np.number), y)
-
-    importances = pd.Series(
-        rf.feature_importances_,
-        index=X.select_dtypes(include=np.number).columns
-    ).sort_values(ascending=False)
-
-    st.bar_chart(importances)
+    feature_selection.show(df)
 
 # ==========================================
 # PAGE 5 - MODEL
