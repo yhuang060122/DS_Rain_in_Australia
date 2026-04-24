@@ -6,10 +6,23 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.ensemble import RandomForestClassifier
+
+from model import build_model
+from preprocessing import feature_engineering 
+
+# ------------------------------------------
+# CONFIG
+# ------------------------------------------
 st.set_page_config(page_title="Rain Prediction App", layout="wide")
 
 # ------------------------------------------
@@ -27,14 +40,24 @@ def load_data():
 
 df = load_data()
 
+@st.cache_resource
+def load_model(df):
+    return build_model(df)
+
+model, feature_names = load_model(df)
+
+
 # ------------------------------------------
-# SIDEBAR
+# SIDEBAR NAVIGATION
 # ------------------------------------------
-st.sidebar.title("Navigation")
+st.sidebar.title("📌 Navigation")
 page = st.sidebar.radio("Go to", [
-    "Project Overview",
-    "Data Exploration",
-    "Prediction"
+    "🏠 Overview",
+    "📊 Data Exploration",
+    "⚙️ Feature Engineering",
+    "🎯 Feature Selection",
+    "🤖 Model",
+    "🌧️ Prediction"
 ])
 
 # ------------------------------------------
@@ -57,6 +80,8 @@ if page == "Project Overview":
     - Transport optimization
     - Weather risk management
     """)
+
+    st.dataframe(df.head())
 
 # ------------------------------------------
 # PAGE 2 - EDA
@@ -83,28 +108,122 @@ if page == "Data Exploration":
     sns.heatmap(df.select_dtypes(include=np.number).corr(), ax=ax)
     st.pyplot(fig)
 
-# ------------------------------------------
-# PAGE 3 - PREDICTION
-# ------------------------------------------
-if page == "Prediction":
-    st.title("🤖 Rain Prediction")
 
-    st.markdown("Enter weather conditions:")
+# ==========================================
+# PAGE 2 - PREPROCESSING
+# ==========================================
+elif page == "🧹 Preprocessing":
+    st.title("🧹 Data Preprocessing")
 
-    humidity = st.slider("Humidity (3pm)", 0, 100, 50)
-    pressure = st.slider("Pressure (3pm)", 980, 1050, 1010)
-    temp = st.slider("Temperature (3pm)", -5, 50, 25)
-    wind = st.slider("Wind Speed", 0, 100, 20)
+    st.subheader("Missing Values")
+    st.bar_chart(df.isnull().sum())
 
-    # Dummy prediction (replace with real model)
+    st.markdown("""
+    ✔ Numerical → Median  
+    ✔ Categorical → Mode  
+    ✔ Encoding → OneHot  
+    ✔ Scaling → StandardScaler  
+    """)
+
+# ==========================================
+# PAGE 3 - FEATURE ENGINEERING
+# ==========================================
+elif page == "⚙️ Feature Engineering":
+    st.title("⚙️ Feature Engineering")
+
+    st.code("""
+TempRange = MaxTemp - MinTemp
+HumidityDiff = Humidity3pm - Humidity9am
+""")
+
+    df_fe = feature_engineering(df)
+    st.dataframe(df_fe.head())
+
+# ==========================================
+# PAGE 4 - FEATURE SELECTION
+# ==========================================
+elif page == "🎯 Feature Selection":
+    st.title("🎯 Feature Importance")
+
+    df_fe = feature_engineering(df).dropna()
+
+    X = df_fe.drop(columns=['RainTomorrow'])
+    y = df_fe['RainTomorrow']
+
+    rf = RandomForestClassifier()
+    rf.fit(X.select_dtypes(include=np.number), y)
+
+    importances = pd.Series(
+        rf.feature_importances_,
+        index=X.select_dtypes(include=np.number).columns
+    ).sort_values(ascending=False)
+
+    st.bar_chart(importances)
+
+# ==========================================
+# PAGE 5 - MODEL
+# ==========================================
+elif page == "🤖 Model":
+    st.title("🤖 Model Pipeline")
+
+    st.code("""
+Preprocessing:
+- Imputation
+- Encoding
+- Scaling
+
+Feature Engineering:
+- TempRange
+- HumidityDiff
+
+Model:
+- Random Forest (balanced)
+""")
+
+# ==========================================
+# PAGE 6 - PREDICTION
+# ==========================================
+elif page == "🌧️ Prediction":
+    st.title("🌧️ Will it rain tomorrow?")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        MinTemp = st.number_input("MinTemp")
+        MaxTemp = st.number_input("MaxTemp")
+        Humidity9am = st.slider("Humidity 9am", 0, 100)
+        Humidity3pm = st.slider("Humidity 3pm", 0, 100)
+
+    with col2:
+        Pressure9am = st.number_input("Pressure 9am")
+        Pressure3pm = st.number_input("Pressure 3pm")
+        RainToday = st.selectbox("Rain Today", ["No", "Yes"])
+
+    input_df = pd.DataFrame({
+        'MinTemp':[MinTemp],
+        'MaxTemp':[MaxTemp],
+        'Humidity9am':[Humidity9am],
+        'Humidity3pm':[Humidity3pm],
+        'Pressure9am':[Pressure9am],
+        'Pressure3pm':[Pressure3pm],
+        'RainToday':[1 if RainToday=="Yes" else 0]
+    })
+
     if st.button("Predict"):
-        score = humidity * 0.4 - pressure * 0.01 + wind * 0.2
-        if score > 20:
-            st.error("🌧 It will likely rain tomorrow")
-        else:
-            st.success("☀️ No rain expected")
+        try:
+            prediction = model.predict(input_df)[0]
+            proba = model.predict_proba(input_df)[0][1]
 
-    st.warning("⚠️ Demo prediction (replace with trained model)")
+            if prediction == 1:
+                st.error(f"🌧️ Rain Tomorrow (probability {proba:.2f})")
+            else:
+                st.success(f"☀️ No Rain (probability {proba:.2f})")
+
+        except Exception as e:
+            st.warning("⚠️ Please fill all inputs correctly")
+
+
+
 
 # ==========================================
 # END APP
