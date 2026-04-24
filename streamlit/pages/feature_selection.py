@@ -21,6 +21,7 @@ def show(df):
     st.subheader("🌳 Feature Importance")
 
     df.head()
+    df = df.dropna()
 
     num_df = df.select_dtypes(include=np.number)
 
