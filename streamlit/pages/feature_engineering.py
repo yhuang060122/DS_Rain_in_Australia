@@ -5,7 +5,7 @@ from utils.preprocessing import feature_engineering
 def show(df):
     st.title("⚙️ Feature Engineering")
 
-    st.markdown("### ➕ Created Features")
+    st.subheader("➕ Created Features")
 
     st.code("""
         TempRange = MaxTemp - MinTemp

@@ -9,8 +9,6 @@ from sklearn.ensemble import RandomForestClassifier
 def show(df):
     st.title("🎯 Feature Selection")
 
-    df = df.dropna()
-
     st.subheader("📊 Correlation Heatmap")
     num_df = df.select_dtypes(include=['float64', 'int64'])
 
@@ -21,6 +19,8 @@ def show(df):
     st.pyplot(fig)
 
     st.subheader("🌳 Feature Importance")
+
+    df.head()
 
     X = df.select_dtypes(include=['float64', 'int64']).drop(
         columns=['RainTomorrow'])
